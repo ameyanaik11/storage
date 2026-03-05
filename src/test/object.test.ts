@@ -2233,7 +2233,7 @@ describe('testing generating signed URLs', () => {
   })
 
   test('can generate and use batch signed URLs with Unicode and URL-reserved characters', async () => {
-    const objectName = `signed-batch-${randomUUID()}-éè-中文-🙂-q?foo=1&bar=%25+plus;semi:colon,#frag.png`
+    const objectName = `authenticated/signed-batch-${randomUUID()}-éè-中文-🙂-q?foo=1&bar=%25+plus;semi:colon,#frag.png`
     const authorization = `Bearer ${await serviceKeyAsync}`
     const path = './src/test/assets/sadcat.jpg'
     const { size } = fs.statSync(path)
@@ -2278,6 +2278,15 @@ describe('testing generating signed URLs', () => {
     })
     expect(getResponse.statusCode).toBe(200)
     expect(getResponse.headers['etag']).toBe('abc')
+
+    const deleteResponse = await appInstance.inject({
+      method: 'DELETE',
+      url: `/object/bucket2/${encodeURIComponent(objectName)}`,
+      headers: {
+        authorization,
+      },
+    })
+    expect(deleteResponse.statusCode).toBe(200)
   })
 
   test('can generate and use batch signed URLs for nested Unicode and URL-reserved paths', async () => {
@@ -2285,8 +2294,8 @@ describe('testing generating signed URLs', () => {
     const path = './src/test/assets/sadcat.jpg'
     const { size } = fs.statSync(path)
     const objectNames = [
-      `signed-batch-${randomUUID()}-폴더?x=1/세그먼트#tag/leaf+plus;semi,.png`,
-      `signed-batch-${randomUUID()}-éè/中文&name=1/끝🙂.png`,
+      `authenticated/signed-batch-${randomUUID()}-폴더?x=1/세그먼트#tag/leaf+plus;semi,.png`,
+      `authenticated/signed-batch-${randomUUID()}-éè/中文&name=1/끝🙂.png`,
     ]
 
     for (const objectName of objectNames) {
@@ -2334,6 +2343,17 @@ describe('testing generating signed URLs', () => {
       })
       expect(getResponse.statusCode).toBe(200)
       expect(getResponse.headers['etag']).toBe('abc')
+    }
+
+    for (const objectName of objectNames) {
+      const deleteResponse = await appInstance.inject({
+        method: 'DELETE',
+        url: `/object/bucket2/${encodeURIComponent(objectName)}`,
+        headers: {
+          authorization,
+        },
+      })
+      expect(deleteResponse.statusCode).toBe(200)
     }
   })
 })
@@ -3518,6 +3538,15 @@ describe('Object key names with Unicode characters', () => {
       })
       .first()
     expect(objectResponse?.name).toBe(objectName)
+
+    const deleteResponse = await appInstance.inject({
+      method: 'DELETE',
+      url: `/object/bucket2/${encodeURIComponent(objectName)}`,
+      headers: {
+        authorization,
+      },
+    })
+    expect(deleteResponse.statusCode).toBe(200)
   })
 
   test('should not generate signed upload URL for invalid key', async () => {
